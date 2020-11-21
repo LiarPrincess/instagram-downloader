@@ -1,5 +1,5 @@
 {
-  "name": "instagram-collection-downloader",
+  "name": "instagram-downloader",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -12,6 +12,7 @@
     "axios": "^0.21.0"
   },
   "devDependencies": {
+    "@types/node": "^14.14.9",
     "typescript": "^4.0.3"
   }
 }
