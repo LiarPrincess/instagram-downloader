@@ -1,8 +1,9 @@
 import { getJSON } from './common/request';
 import { GuestAuthentication } from './authenticate';
 import { ProfileResponse } from './response-types/profile-response';
+import { Cache } from '../cache';
 
-import * as cache from '../cache';
+const cache = new Cache('profile');
 
 export interface Profile {
   readonly id: string;
@@ -26,9 +27,11 @@ export async function getProfile(
   username: string,
   useCache: boolean
 ): Promise<Profile> {
+  console.log('Getting profile:', username);
   const response = await get(auth, username, useCache);
   const user = response.graphql.user;
 
+  console.log('  Parsing response');
   return {
     id: user.id,
     username,
@@ -52,17 +55,19 @@ async function get(
   username: string,
   useCache: boolean
 ): Promise<ProfileResponse> {
-  const cacheKey = `${username}_profile.json`;
+  const cacheKey = username + '.json';
 
   if (useCache) {
     const string = await cache.get(cacheKey);
     if (string) {
+      console.log('  Found cached response');
       const result = JSON.parse(string);
       return result;
     }
   }
 
   const url = `https://www.instagram.com/${username}/?__a=1`;
+  console.log('  Requesting:', url);
   const response = await getJSON(auth, url);
   await cache.put(cacheKey, JSON.stringify(response));
 
