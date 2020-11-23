@@ -1,21 +1,18 @@
-import { join } from 'path';
-import { default as axios } from 'axios';
-import { promises as fs, createWriteStream } from 'fs';
-
 import * as instagram from './instagram';
 
+const useCache = true;
 const outputDir = './output';
 
 (async () => {
   try {
-    // const user = await instagram.authenticateAsGuest();
-    const user = { csrfToken: 'rv096hdWPhh4xEJlIjcmp93t5S9fFso6' };
-    // const profile = await instagram.getProfile(user, 'best.dressed');
-    const profileId = '4619773314';
-    const media = await instagram.getProfileMedia(user, profileId);
+    // const auth = await instagram.authenticateAsGuest();
+    const auth = { csrfToken: 'rv096hdWPhh4xEJlIjcmp93t5S9fFso6' };
+    const profile = await instagram.getProfile(auth, 'best.dressed', useCache);
+    const media = await instagram.getProfileMedia(auth, profile, useCache);
 
-    // self.session.headers.update({'X-CSRFToken': req.cookies['csrftoken']})
-    // self.session.headers.update({'user-agent': CHROME_WIN_UA})
+    // const media = instagram.getMedia(auth, 'CGY0vswlTD0'); // image
+    // const media = instagram.getMedia(auth, 'CHvBfe5lTYH'); // sidecar
+
     // ================ END ================
 
     // const file = './instagram-saved.html';

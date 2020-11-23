@@ -9,7 +9,7 @@ const forbiddenKeyCharacters = new Set(['/', '\\', '?', ':', '#']);
 
 export class Cache {
 
-  readonly dir: string;
+  private readonly dir: string;
 
   constructor(name: string) {
     this.dir = join(rootCacheDir, name);
