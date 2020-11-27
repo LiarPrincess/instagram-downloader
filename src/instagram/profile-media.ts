@@ -1,8 +1,7 @@
 import { Profile } from './profile';
-import { getJSON } from './common/request';
-import { parseTimestamp } from './common/timestamp';
 import { GuestAuthentication } from './authenticate';
-import { ProfileMediaResponse } from './response-types/profile-media-response';
+import { ProfileMediaResponse } from './response-types/profile-media';
+import { getJSON, parseTimestamp, waitAfterRequestToPreventBan, seconds } from './common';
 import { Cache } from '../cache';
 
 const cache = new Cache('profile-media');
@@ -87,6 +86,7 @@ export async function get(
   console.log('    Requesting page');
   const response = await getJSON(auth, url, gisData);
   await cache.put(cacheKey, JSON.stringify(response));
+  await waitAfterRequestToPreventBan(2 * seconds);
 
   return response;
 }

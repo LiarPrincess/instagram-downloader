@@ -1,12 +1,9 @@
-import { getJSON } from './common/request';
-import { parseTimestamp } from './common/timestamp';
 import { GuestAuthentication } from './authenticate';
 import { Media as MediaResponse, DisplayResource } from './response-types/media';
+import { getJSON, parseTimestamp, waitAfterRequestToPreventBan, seconds } from './common';
 import { Cache } from '../cache';
-import { wait } from '../wait';
 
 const cache = new Cache('media');
-const waitAfterRequestToPreventBan = 2 * 1000; // milliseconds
 
 export type Media = GraphImage | GraphSidecar | GraphVideo;
 
@@ -132,7 +129,7 @@ async function get(
 
   const response = await getJSON(auth, url) as MediaResponse;
   await cache.put(cacheKey, JSON.stringify(response));
-  await wait(waitAfterRequestToPreventBan);
+  await waitAfterRequestToPreventBan(2 * seconds);
 
   return response;
 }
