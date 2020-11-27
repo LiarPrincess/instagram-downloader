@@ -3,6 +3,13 @@ import { default as axios } from 'axios';
 import { UserAgents } from './common/UserAgents';
 
 const baseUrl = 'https://www.instagram.com/';
+const loginUrl = baseUrl + 'accounts/login/ajax/';
+
+/// Log into Instagram in the browser and copy cookie values.
+export interface BrowserAuthentication {
+  readonly sessionId: string;
+  readonly csrfToken: string;
+}
 
 export interface GuestAuthentication {
   readonly csrfToken: string;

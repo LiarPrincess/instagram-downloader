@@ -82,7 +82,7 @@ export async function getProfileMedia(
   return result;
 }
 
-export async function get(
+async function get(
   auth: GuestAuthentication,
   profile: Profile,
   endCursor: string | undefined,
