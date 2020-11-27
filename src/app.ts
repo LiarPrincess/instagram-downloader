@@ -5,13 +5,13 @@ const outputDir = './output';
 
 (async () => {
   try {
-    // const auth = await instagram.authenticateAsGuest();
-    const auth = { csrfToken: 'rv096hdWPhh4xEJlIjcmp93t5S9fFso6' };
+    const auth = await instagram.authenticateAsGuest();
     const profile = await instagram.getProfile(auth, 'best.dressed', useCache);
-    const media = await instagram.getProfileMedia(auth, profile, useCache);
+    const profileMedia = await instagram.getProfileMedia(auth, profile, useCache);
 
-    // const media = instagram.getMedia(auth, 'CGY0vswlTD0'); // image
-    // const media = instagram.getMedia(auth, 'CHvBfe5lTYH'); // sidecar
+    // for (const m of profileMedia) {
+    //   await instagram.getMedia(auth, m.shortCode, useCache);
+    // }
 
     // ================ END ================
 

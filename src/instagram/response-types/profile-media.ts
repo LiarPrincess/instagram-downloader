@@ -60,6 +60,7 @@ export interface Node {
   thumbnail_src: string;
   thumbnail_resources: ThumbnailResource[];
   is_video: boolean;
+  video_url?: string;
 }
 
 export interface Edge {

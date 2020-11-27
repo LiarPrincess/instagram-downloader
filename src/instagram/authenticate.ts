@@ -1,6 +1,6 @@
 import { default as axios } from 'axios';
 
-import { Urls, UserAgents } from './common/constants';
+import { UserAgents } from './common/UserAgents';
 
 const baseUrl = 'https://www.instagram.com/';
 

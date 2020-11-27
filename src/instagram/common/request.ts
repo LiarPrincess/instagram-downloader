@@ -2,10 +2,10 @@ import { createHash } from 'crypto';
 import { promises as fs } from 'fs';
 import { default as axios } from 'axios';
 
-import { UserAgents } from './constants';
+import { UserAgents } from './UserAgents';
 import { GuestAuthentication } from '../authenticate';
 
-export async function get(
+export async function getJSON(
   auth: GuestAuthentication,
   url: string,
   gisData: string | undefined = undefined
@@ -21,6 +21,12 @@ export async function get(
   }
 
   const response = await axios.get(url, { headers });
+
+  const contentType = response.headers['content-type'] as string;
+  if (!contentType.includes('json')) {
+    throw new Error(`Invalid response content type: '${contentType}' (expected json).`);
+  }
+
   return response.data;
 }
 
