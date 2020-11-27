@@ -21,7 +21,7 @@ interface Owner {
   readonly id: string;
   readonly username: string;
   readonly full_name: string;
-  readonly profile_pic_url: string;
+  readonly profilePicUrl: string;
 }
 
 interface GraphImage extends Common {
@@ -64,7 +64,7 @@ export async function getMedia(
     id: media.owner.id,
     username: media.owner.username,
     full_name: media.owner.full_name,
-    profile_pic_url: media.owner.profile_pic_url
+    profilePicUrl: media.owner.profile_pic_url
   };
 
   const common: Common = {
@@ -78,30 +78,22 @@ export async function getMedia(
 
   switch (media.__typename) {
     case 'GraphImage':
-      return {
-        type: 'GraphImage',
-        displayUrl: media.display_url,
-        sources: toImageSources(media.display_resources),
-        ...common
-      };
+      const displayUrl = media.display_url;
+      const sources = toImageSources(media.display_resources);
+      return { type: 'GraphImage', displayUrl, sources, ...common };
 
     case 'GraphSidecar':
-      return {
-        type: 'GraphSidecar',
-        images: media.edge_sidecar_to_children.edges.map(i => ({
-          id: i.node.id,
-          shortCode: i.node.shortcode,
-          sources: toImageSources(i.node.display_resources)
-        })),
-        ...common
-      };
+      const images = media.edge_sidecar_to_children.edges.map(i => ({
+        id: i.node.id,
+        shortCode: i.node.shortcode,
+        sources: toImageSources(i.node.display_resources)
+      }));
+
+      return { type: 'GraphSidecar', images, ...common };
 
     case 'GraphVideo':
-      return {
-        type: 'GraphVideo',
-        videoUrl: media.video_url,
-        ...common
-      };
+      const videoUrl = media.video_url;
+      return { type: 'GraphVideo', videoUrl, ...common };
 
     default:
       throw new Error(`Unknown media type '${media.__typename}'.`);

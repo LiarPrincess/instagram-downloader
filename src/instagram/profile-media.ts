@@ -6,22 +6,29 @@ import { Cache } from '../cache';
 
 const cache = new Cache('profile-media');
 
-export enum ProfileMediaType {
-  GraphImage,
-  GraphSidecar,
-  GraphVideo
-}
+export type ProfileMedia = ProfileGraphImage | ProfileGraphSidecar | ProfileGraphVideo;
 
-export type ProfileMedia = {
-  readonly type: ProfileMediaType;
-
+interface Common {
   readonly id: string;
   readonly shortCode: string;
   readonly takenAt: Date;
 
   readonly likeCount: number;
   readonly commentCount: number;
-};
+}
+
+interface ProfileGraphImage extends Common {
+  readonly type: 'GraphImage';
+  readonly displayUrl: string;
+}
+
+interface ProfileGraphSidecar extends Common {
+  readonly type: 'GraphSidecar';
+}
+
+interface ProfileGraphVideo extends Common {
+  readonly type: 'GraphVideo';
+}
 
 export async function getProfileMedia(
   auth: GuestAuthentication,
@@ -39,18 +46,33 @@ export async function getProfileMedia(
 
     console.log('    Parsing response');
     for (const edge of mediaPage.edges) {
-      const node = edge.node;
-      const type = parseType(node.__typename);
-      const takenAt = parseTimestamp(node.taken_at_timestamp);
+      const media = edge.node;
 
-      result.push({
-        type,
-        id: node.id,
-        shortCode: node.shortcode,
-        takenAt,
-        likeCount: node.edge_media_preview_like.count,
-        commentCount: node.edge_media_to_comment.count
-      });
+      const common: Common = {
+        id: media.id,
+        shortCode: media.shortcode,
+        takenAt: parseTimestamp(media.taken_at_timestamp),
+        likeCount: media.edge_media_preview_like.count,
+        commentCount: media.edge_media_to_comment.count
+      };
+
+      switch (media.__typename) {
+        case 'GraphImage':
+          const displayUrl = media.display_url;
+          result.push({ type: 'GraphImage', displayUrl, ...common });
+          break;
+
+        case 'GraphSidecar':
+          result.push({ type: 'GraphSidecar', ...common });
+          break;
+
+        case 'GraphVideo':
+          result.push({ type: 'GraphVideo', ...common });
+          break;
+
+        default:
+          throw new Error(`Unknown media type '${media.__typename}'.`);
+      }
     }
 
     const page = mediaPage.page_info;
@@ -89,16 +111,4 @@ export async function get(
   await waitAfterRequestToPreventBan(2 * seconds);
 
   return response;
-}
-
-function parseType(nodeType: string): ProfileMediaType {
-  const allCases = Object.keys(ProfileMediaType);
-
-  for (const string of allCases) {
-    if (string == nodeType) {
-      return ProfileMediaType[string as keyof typeof ProfileMediaType];
-    }
-  }
-
-  throw new Error(`Unknown media type '${nodeType}'.`);
 }
