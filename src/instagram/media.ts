@@ -32,11 +32,24 @@ interface GraphImage extends Common {
 
 interface GraphSidecar extends Common {
   readonly type: 'GraphSidecar';
-  readonly images: {
-    readonly id: string;
-    readonly shortCode: string;
-    readonly sources: ImageSource[];
-  }[];
+  readonly children: GraphSidecarChild[];
+}
+
+type GraphSidecarChild = GraphSidecarImage | GraphSidecarVideo;
+
+interface GraphSidecarImage {
+  readonly type: 'GraphImage';
+  readonly id: string;
+  readonly shortCode: string;
+  readonly displayUrl: string;
+  readonly sources: ImageSource[];
+}
+
+interface GraphSidecarVideo {
+  readonly type: 'GraphVideo';
+  readonly id: string;
+  readonly shortCode: string;
+  readonly videoUrl: string;
 }
 
 interface GraphVideo extends Common {
@@ -83,13 +96,30 @@ export async function getMedia(
       return { type: 'GraphImage', displayUrl, sources, ...common };
 
     case 'GraphSidecar':
-      const images = media.edge_sidecar_to_children.edges.map(i => ({
-        id: i.node.id,
-        shortCode: i.node.shortcode,
-        sources: toImageSources(i.node.display_resources)
-      }));
+      const children: GraphSidecarChild[] = [];
+      for (const edge of media.edge_sidecar_to_children.edges) {
+        const child = edge.node;
+        const id = child.id;
+        const shortCode = child.shortcode;
 
-      return { type: 'GraphSidecar', images, ...common };
+        switch (child.__typename) {
+          case 'GraphImage':
+            const displayUrl = child.display_url;
+            const sources = toImageSources(child.display_resources);
+            children.push({ type: 'GraphImage', id, shortCode, displayUrl, sources });
+            break;
+
+          case 'GraphVideo':
+            const videoUrl = child.video_url;
+            children.push({ type: 'GraphVideo', id, shortCode, videoUrl });
+            break;
+
+          default:
+            throw new Error(`Unknown sidecar children media type '${child.__typename}'.`);
+        }
+      }
+
+      return { type: 'GraphSidecar', children, ...common };
 
     case 'GraphVideo':
       const videoUrl = media.video_url;
@@ -121,7 +151,7 @@ async function get(
 
   const response = await getJSON(auth, url) as MediaResponse;
   await cache.put(cacheKey, JSON.stringify(response));
-  await waitAfterRequestToPreventBan(2 * seconds);
+  await waitAfterRequestToPreventBan(10 * seconds);
 
   return response;
 }

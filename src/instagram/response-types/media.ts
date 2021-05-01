@@ -73,6 +73,7 @@ export interface Node4 {
   accessibility_caption: string;
   is_video: boolean;
   tracking_token: string;
+  video_url: string;
   edge_media_to_tagged_user: Edgemediatotaggeduser;
 }
 

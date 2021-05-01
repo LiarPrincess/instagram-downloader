@@ -1,25 +1,43 @@
-import { promises as fs } from 'fs';
 import { default as axios } from 'axios';
 
 import { Profile } from './profile';
 import { BrowserAuthentication } from './authenticate';
 import { UserSavedResponse } from './response-types/user-saved';
-import { getJSON, parseTimestamp, waitAfterRequestToPreventBan, seconds } from './common';
+import { parseTimestamp, waitAfterRequestToPreventBan, seconds } from './common';
 import { Cache } from '../cache';
-import { join } from 'path';
-import { getProfile } from './profile';
 
 const cache = new Cache('user-saved');
 
-export interface Result {
+export type SavedMedia = SavedGraphImage | SavedGraphSidecar | SavedGraphVideo;
+
+interface Common {
+  readonly id: string;
+  readonly shortCode: string;
+  readonly takenAt: Date;
+  readonly ownerId: string;
+  readonly likeCount: number;
 }
 
-export async function getSaved(auth: BrowserAuthentication, username: string, useCache: boolean): Promise<Result[]> {
-  console.log('Getting saved media for:', username);
-  console.log('  Getting user profile');
-  const profile = await getProfile(auth, username, true);
+interface SavedGraphImage extends Common {
+  readonly type: 'GraphImage';
+  readonly displayUrl: string;
+}
 
-  const result: Result[] = [];
+interface SavedGraphSidecar extends Common {
+  readonly type: 'GraphSidecar';
+}
+
+interface SavedGraphVideo extends Common {
+  readonly type: 'GraphVideo';
+}
+
+export async function getSavedMedia(
+  auth: BrowserAuthentication,
+  profile: Profile,
+  useCache: boolean
+): Promise<SavedMedia[]> {
+  console.log('Getting saved media for:', profile.username);
+  const result: SavedMedia[] = [];
 
   let endCursor: string | undefined = undefined;
   do {
@@ -28,18 +46,42 @@ export async function getSaved(auth: BrowserAuthentication, username: string, us
     const mediaPage = response.data.user.edge_saved_media;
 
     console.log('    Parsing response');
-    // for (const edge of mediaPage.edges) {
-    // }
+    for (const edge of mediaPage.edges) {
+      const media = edge.node;
+
+      const common: Common = {
+        id: media.id,
+        shortCode: media.shortcode,
+        takenAt: parseTimestamp(media.taken_at_timestamp),
+        ownerId: media.owner.id,
+        likeCount: media.edge_liked_by.count
+      };
+
+      switch (media.__typename) {
+        case 'GraphImage':
+          const displayUrl = media.display_url;
+          result.push({ type: 'GraphImage', displayUrl, ...common });
+          break;
+
+        case 'GraphSidecar':
+          result.push({ type: 'GraphSidecar', ...common });
+          break;
+
+        case 'GraphVideo':
+          result.push({ type: 'GraphVideo', ...common });
+          break;
+
+        default:
+          throw new Error(`Unknown media type '${media.__typename}'.`);
+      }
+    }
 
     const page = mediaPage.page_info;
     endCursor = page.has_next_page ? page.end_cursor : undefined;
-    throw 'DO NOT REQUEST NEXT PAGES!';
   } while (endCursor != undefined);
 
   return result;
 }
-
-// TODO: https://www.instagram.com/liarprincesss/saved/?__a=1
 
 async function get(
   auth: BrowserAuthentication,
@@ -50,15 +92,16 @@ async function get(
   const cacheKeyCursor = endCursor == undefined ? '' : '_' + endCursor;
   const cacheKey = `${profile.username}${cacheKeyCursor}.json`;
 
-  // if (useCache) {
-  //   const string = await cache.get(cacheKey);
-  //   if (string) {
-  //     console.log('    Found cached response');
-  //     const result = JSON.parse(string);
-  //     return result;
-  //   }
-  // }
+  if (useCache) {
+    const string = await cache.get(cacheKey);
+    if (string) {
+      console.log('    Found cached response');
+      const result = JSON.parse(string);
+      return result;
+    }
+  }
 
+  // There is also 'https://www.instagram.com/USERNAME/saved/?__a=1' if this fails.
   const after = endCursor == undefined ? 'null' : `"${endCursor}"`;
   const params = `{"id":"${profile.id}","first":50,"after":${after}}`;
   const url = `https://www.instagram.com/graphql/query/?query_hash=2ce1d673055b99250e93b6f88f878fde&variables=${params}`;
