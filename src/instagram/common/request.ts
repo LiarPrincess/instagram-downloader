@@ -10,7 +10,7 @@ export async function getJSON(
   url: string,
   gisData: string | undefined = undefined
 ): Promise<any> {
-  let headers: any = {
+  const headers: any = {
     'Referer': 'https://www.instagram.com/',
     'X-CSRFToken': auth.csrfToken,
     'user-agent': UserAgents.chromeWin

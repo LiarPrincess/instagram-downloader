@@ -3,7 +3,7 @@ import { default as axios } from 'axios';
 import { Profile } from './profile';
 import { BrowserAuthentication } from './authenticate';
 import { UserSavedResponse } from './response-types/user-saved';
-import { parseTimestamp, waitAfterRequestToPreventBan, seconds } from './common';
+import { parseTimestamp, waitAfterSavedMediaRequestToPreventBan } from './common';
 import { Cache } from '../cache';
 
 const cache = new Cache('user-saved');
@@ -124,7 +124,7 @@ async function get(
 
   const data = response.data;
   await cache.put(cacheKey, JSON.stringify(data));
-  await waitAfterRequestToPreventBan(2 * seconds);
+  await waitAfterSavedMediaRequestToPreventBan();
 
   return data;
 }

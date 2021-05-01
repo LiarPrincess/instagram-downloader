@@ -1,6 +1,6 @@
 import { GuestAuthentication } from './authenticate';
 import { ProfileResponse } from './response-types/profile';
-import { getJSON, waitAfterRequestToPreventBan, seconds } from './common';
+import { getJSON, waitAfterProfileRequestToPreventBan } from './common';
 import { Cache } from '../cache';
 
 const cache = new Cache('profile');
@@ -70,7 +70,7 @@ async function get(
   console.log('  Requesting:', url);
   const response = await getJSON(auth, url);
   await cache.put(cacheKey, JSON.stringify(response));
-  await waitAfterRequestToPreventBan(2 * seconds);
+  await waitAfterProfileRequestToPreventBan();
 
   return response;
 }
