@@ -10,6 +10,23 @@ export function toDateString(date: Date): string {
   return iso.substring(0, 16).replace('T', ' ').replace(':', '');
 }
 
+/* ============ */
+/* === Wait === */
+/* ============ */
+
+export const seconds = 1000;
+export const minutes = 60 * seconds;
+
+export async function waitAfterFailedDownload() {
+  const minuteCount = 15;
+  console.log(`  Waiting ${minuteCount} minutes after failed download`);
+  await wait(minuteCount * minutes);
+}
+
+function wait(milliseconds: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, milliseconds));
+}
+
 /* ======================= */
 /* === Image selection === */
 /* ======================= */

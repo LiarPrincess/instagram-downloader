@@ -17,8 +17,7 @@ export async function downloadMedia(
 ) {
   for (let index = 0; index < mediaEntries.length; index++) {
     const media = mediaEntries[index];
-    console.log(`${index + 1}/${mediaEntries.length} Downloading: ${media.shortCode}`);
-    console.log('  Type:', media.type);
+    console.log(`${index + 1}/${mediaEntries.length} Downloading: ${media.shortCode} (type: ${media.type})`);
 
     const ownerUsername = media.owner.username;
 
@@ -43,10 +42,8 @@ export async function downloadSavedMedia(
 ) {
   for (let index = 0; index < mediaEntries.length; index++) {
     const savedMedia = mediaEntries[index];
-    console.log(`${index + 1}/${mediaEntries.length} Downloading: ${savedMedia.shortCode}`);
-    console.log('  Type:', savedMedia.type);
+    console.log(`${index + 1}/${mediaEntries.length} Downloading: ${savedMedia.shortCode} (type: ${savedMedia.type})`);
 
-    console.log('  Downloading full media');
     const media = await instagram.getMedia(auth, savedMedia.shortCode, useCache);
     const ownerUsername = media.owner.username;
 
@@ -74,8 +71,7 @@ export async function downloadProfileMedia(
 
   for (let index = 0; index < mediaEntries.length; index++) {
     const media = mediaEntries[index];
-    console.log(`${index + 1}/${mediaEntries.length} Downloading: ${media.shortCode}`);
-    console.log('  Type:', media.type);
+    console.log(`${index + 1}/${mediaEntries.length} Downloading: ${media.shortCode} (type: ${media.type})`);
 
     switch (media.type) {
       case 'GraphImage':

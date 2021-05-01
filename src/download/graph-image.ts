@@ -4,24 +4,39 @@ import {
   ImageSource,
   toDateString,
   getBiggestImageUrl,
-  downloadFileIfNotExists
+  downloadFileIfNotExists,
+  waitAfterFailedDownload
 } from './helpers';
+
+interface GraphImage {
+  readonly takenAt: Date;
+  readonly displayUrl: string;
+  readonly sources?: ImageSource[];
+}
 
 export async function downloadGraphImage(
   ownerUsername: string,
-  media: {
-    takenAt: Date,
-    displayUrl: string,
-    sources?: ImageSource[]
-  },
+  media: GraphImage,
+  outputDir: string
+) {
+  while (true) {
+    try {
+      await tryDownload(ownerUsername, media, outputDir);
+      return;
+    } catch (error) {
+      console.log(`${error}`);
+      await waitAfterFailedDownload();
+    }
+  }
+}
+
+async function tryDownload(
+  ownerUsername: string,
+  media: GraphImage,
   outputDir: string
 ) {
   const date = toDateString(media.takenAt);
   const path = join(outputDir, `${ownerUsername}-${date}.jpg`);
-  console.log('  Path:', path);
-
   const url = getBiggestImageUrl(media.displayUrl, media.sources);
-  console.log('  Url:', url);
-
   await downloadFileIfNotExists(path, url);
 }
