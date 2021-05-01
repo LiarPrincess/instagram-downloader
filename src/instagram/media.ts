@@ -1,6 +1,7 @@
 import { GuestAuthentication } from './authenticate';
+import { MediaBrowserPage } from './media-by-browser';
 import { Media as MediaResponse, DisplayResource } from './response-types/media';
-import { getJSON, parseTimestamp, waitAfterRequestToPreventBan, seconds } from './common';
+import { getJSON, parseTimestamp, waitAfterMediaRequestToPreventBan } from './common';
 import { Cache } from '../cache';
 
 const cache = new Cache('media');
@@ -149,11 +150,48 @@ async function get(
   const url = `https://www.instagram.com/p/${shortCode}/?__a=1`;
   console.log('  Requesting:', url);
 
-  const response = await getJSON(auth, url) as MediaResponse;
-  await cache.put(cacheKey, JSON.stringify(response));
-  await waitAfterRequestToPreventBan(10 * seconds);
+  let requestError: Error;
+  try {
+    const response = await getJSON(auth, url) as MediaResponse;
+    await cache.put(cacheKey, JSON.stringify(response));
+    await waitAfterMediaRequestToPreventBan();
+    return response;
+  } catch (error) {
+    console.log(`    ${error}`);
+    requestError = error;
+  }
 
-  return response;
+  const page = new MediaBrowserPage(shortCode, useCache);
+  console.log('  Opening media in browser:', page.url);
+
+  let __initialDataError: Error;
+  try {
+    const response = await page.getMediaFrom__initialData();
+    await cache.put(cacheKey, JSON.stringify(response));
+    return response;
+  } catch (error) {
+    console.log(`    ${error}`);
+    __initialDataError = error;
+  }
+
+  let _sharedDataError: Error;
+  try {
+    const response = await page.getMediaFrom_sharedData();
+    await cache.put(cacheKey, JSON.stringify(response));
+    return response;
+  } catch (error) {
+    console.log(`    ${error}`);
+    _sharedDataError = error;
+  }
+
+  const msg = `\
+All possible methods to get media failed:
+- GET request: ${requestError}
+- browser __initialData: ${__initialDataError}
+- browser _sharedData: ${_sharedDataError}
+`;
+
+  throw new Error(msg);
 }
 
 function toImageSources(resources: DisplayResource[]): ImageSource[] {
