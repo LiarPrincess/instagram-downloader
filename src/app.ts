@@ -1,65 +1,32 @@
+import { join } from 'path';
+import { promises as fs } from 'fs';
+
+import * as download from './download';
 import * as instagram from './instagram';
+import { BrowserAuthentication, GuestAuthentication } from './instagram';
 
 const useCache = true;
 const outputDir = './output';
 
 (async () => {
   try {
-    const auth = await instagram.authenticateAsGuest();
-    const profile = await instagram.getProfile(auth, 'best.dressed', useCache);
-    const profileMedia = await instagram.getProfileMedia(auth, profile, useCache);
+    const guestAuth = await instagram.authenticateAsGuest();
 
-    // for (const m of profileMedia) {
-    //   await instagram.getMedia(auth, m.shortCode, useCache);
-    // }
+    // You can get them from cookies in the browser
+    const browserAuth = {
+      sessionId: '6126805921%3Aq3zdVl2QGY5v2D%3A12',
+      csrfToken: '7k7yO1a5kKcs7gjZHWp0Oiy8sFf1dqPj'
+    };
 
-    // ================ END ================
+    // === Profile ===
+    // const username = 'best.dressed';
+    // const username = 'dd_toys._';
+    // const username = 'kawaiibettyjiang';
+    // await downloadAllProfileMedia(guestAuth, username);
 
-    // const file = './instagram-saved.html';
-
-    // console.log(`Parsing '${file}' html file`);
-    // const html = await fs.readFile(file, 'utf-8');
-    // const savedPosts = parseSavedPosts(html);
-    // console.log(`  Found ${savedPosts.length} posts`);
-
-    // for (const savedPost of savedPosts) {
-    //   const url = savedPost.url;
-    //   console.log('Processing:', url);
-
-    //   console.log('  Parsing post');
-    //   const post = await getPost(url);
-    //   console.log(`  Found: ${post.shortCode}`);
-    //   console.log(`  Owner: ${post.owner.full_name} (username: ${post.owner.username})`);
-    //   console.log(`  Taken at: ${post.takenAt.toISOString()}`);
-
-    //   async function download(sources: ImageSource[], filenameSuffix: string) {
-    //     const filename = createFilename(post, filenameSuffix);
-    //     const file = join(outputDir, filename);
-    //     console.log(`  Creating ${filename}`);
-
-    //     const source = getImageWithHighestResolution(post, sources);
-    //     await downloadBinary(file, source.url);
-    //   }
-
-    //   switch (post.content.type) {
-    //     case 'SingleImage':
-    //       const sources = post.content.sources;
-    //       await download(sources, '');
-    //       break;
-
-    //     case 'MultipleImage':
-    //       const images = post.content.images;
-    //       for (let i = 0; i < images.length; i++) {
-    //         const image = images[i];
-    //         const suffix = `-${i + 1}`;
-    //         await download(image.sources, suffix);
-    //       }
-    //       break;
-
-    //     default:
-    //       throw new Error(`Unknown post type.`);
-    //   }
-    // }
+    // === Saved ===
+    const myUsername = 'liarprincesss';
+    await downloadAllSaved(guestAuth, browserAuth, myUsername);
 
     console.log('Finished');
   } catch (error) {
@@ -68,44 +35,24 @@ const outputDir = './output';
   }
 })();
 
-// function createFilename(post: Post, suffix: string): string {
-//   const username = post.owner.username;
+async function downloadAllProfileMedia(
+  guestAuth: GuestAuthentication,
+  username: string
+) {
+  const profile = await instagram.getProfile(guestAuth, username, useCache);
+  const media = await instagram.getProfileMedia(guestAuth, profile, useCache);
 
-//   const dateISO = post.takenAt.toISOString();
-//   const minutesEnd = 16;
-//   const date = dateISO.substring(0, minutesEnd).replace('T', ' ').replace(':', '');
+  const profileOutputDir = join(outputDir, username);
+  await fs.mkdir(profileOutputDir, { recursive: true });
+  await download.downloadProfileMedia(guestAuth, profile, media, profileOutputDir, useCache);
+}
 
-//   return `${username}-${date}${suffix}.jpg`;
-// }
-
-// function getImageWithHighestResolution(post: Post, sources: ImageSource[]): ImageSource {
-//   if (sources.length == 0) {
-//     throw new Error(`No image sources found for '${post.url}'.`);
-//   }
-
-//   let result = sources[0];
-//   for (const source of sources) {
-//     if (source.width > result.width) {
-//       result = source;
-//     }
-//   }
-
-//   return result;
-// }
-
-// async function downloadBinary(file: string, url: string) {
-//   const writer = createWriteStream(file);
-
-//   const response = await axios.request({
-//     url,
-//     method: 'GET',
-//     responseType: 'stream',
-//   });
-
-//   response.data.pipe(writer);
-
-//   return new Promise((resolve, reject) => {
-//     writer.on('finish', resolve);
-//     writer.on('error', reject);
-//   });
-// }
+async function downloadAllSaved(
+  guestAuth: GuestAuthentication,
+  browserAuth: BrowserAuthentication,
+  myUsername: string
+) {
+  const profile = await instagram.getProfile(guestAuth, myUsername, useCache);
+  const media = await instagram.getSavedMedia(browserAuth, profile, useCache);
+  await download.downloadSavedMedia(guestAuth, media, outputDir, useCache);
+}
