@@ -1,2 +1,2 @@
-export async function downloadGraphVideo() {
+export async function downloadGraphVideo(token: 'TYPECHECK_TOKEN') {
 }

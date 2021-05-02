@@ -4,8 +4,7 @@ import {
   ImageSource,
   toDateString,
   getBiggestImageUrl,
-  downloadFileIfNotExists,
-  waitAfterFailedDownload
+  downloadFileIfNotExists
 } from './helpers';
 
 interface GraphImage {
@@ -15,22 +14,6 @@ interface GraphImage {
 }
 
 export async function downloadGraphImage(
-  ownerUsername: string,
-  media: GraphImage,
-  outputDir: string
-) {
-  while (true) {
-    try {
-      await tryDownload(ownerUsername, media, outputDir);
-      return;
-    } catch (error) {
-      console.log(`${error}`);
-      await waitAfterFailedDownload();
-    }
-  }
-}
-
-async function tryDownload(
   ownerUsername: string,
   media: GraphImage,
   outputDir: string

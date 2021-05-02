@@ -18,8 +18,8 @@ export const seconds = 1000;
 export const minutes = 60 * seconds;
 
 export async function waitAfterFailedDownload() {
-  const minuteCount = 15;
-  console.log(`  Waiting ${minuteCount} minutes after failed download`);
+  const minuteCount = 10;
+  console.log(`Waiting ${minuteCount} minutes after failed download`);
   await wait(minuteCount * minutes);
 }
 

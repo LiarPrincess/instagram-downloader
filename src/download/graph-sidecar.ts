@@ -4,9 +4,9 @@ import {
   ImageSource,
   toDateString,
   getBiggestImageUrl,
-  downloadFileIfNotExists,
-  waitAfterFailedDownload
+  downloadFileIfNotExists
 } from './helpers';
+import { downloadGraphVideo } from './graph-video';
 
 interface GraphSidecar {
   readonly owner: {
@@ -32,21 +32,6 @@ export async function downloadGraphSidecar(
   media: GraphSidecar,
   outputDir: string
 ) {
-  while (true) {
-    try {
-      await tryDownload(media, outputDir);
-      return;
-    } catch (error) {
-      console.log(`${error}`);
-      await waitAfterFailedDownload();
-    }
-  }
-}
-
-async function tryDownload(
-  media: GraphSidecar,
-  outputDir: string
-) {
   const ownerUsername = media.owner.username;
   const date = toDateString(media.takenAt);
 
@@ -60,8 +45,9 @@ async function tryDownload(
         break;
 
       case 'GraphVideo':
-        const videoPath = join(outputDir, `${ownerUsername}-${date}-${index}.mp4`);
+        // const videoPath = join(outputDir, `${ownerUsername}-${date}-${index}.mp4`);
         // await downloadIfNotExists(videoPath, child.videoUrl);
+        await downloadGraphVideo('TYPECHECK_TOKEN');
         break;
 
       default:
