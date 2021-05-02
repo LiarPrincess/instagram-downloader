@@ -22,6 +22,7 @@ interface Config {
 }
 
 interface EntryData {
+  LoginAndSignupPage: any | undefined;
   PostPage: PostPage[];
 }
 

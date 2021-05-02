@@ -41,55 +41,78 @@ export class MediaBrowserPage {
   }
 
   async getMediaFrom__initialData(): Promise<Media> {
-    const initialData: MediaInitialData = await this.getWindowProperty('__initialData');
-    if (initialData.pending) {
+    const propertyName = '__initialData';
+    console.log('    Getting:', propertyName);
+
+    const cacheKey = `${this.shortCode}${propertyName}.json`;
+    const propertyValue: MediaInitialData = await this.getWindowProperty(propertyName, cacheKey);
+    if (propertyValue.pending) {
       throw new Error('Response is still pending!');
     }
 
-    const postPages = initialData.data.entry_data.PostPage;
+    const entry_data = propertyValue.data.entry_data;
+    if (entry_data.LoginAndSignupPage) {
+      const msg = 'Instagram returned LoginAndSignupPage';
+      console.log(`      ${msg}`);
+      throw new Error(msg);
+    }
+
+    const postPages = entry_data.PostPage;
     if (postPages.length != 1) {
       throw new Error(`Got ${postPages.length} post pages!`);
     }
 
+    // Only when all of the validation succeded we can cache 'propertyValue'
+    await cache.put(cacheKey, JSON.stringify(propertyValue));
     return postPages[0];
   }
 
   async getMediaFrom_sharedData(): Promise<Media> {
-    const sharedData: MediaSharedData = await this.getWindowProperty('_sharedData');
+    const propertyName = '_sharedData';
+    console.log('    Getting:', propertyName);
 
-    const postPages = sharedData.entry_data.PostPage;
+    const cacheKey = `${this.shortCode}${propertyName}.json`;
+    const propertyValue: MediaSharedData = await this.getWindowProperty(propertyName, cacheKey);
+
+    const entry_data = propertyValue.entry_data;
+    if (entry_data.LoginAndSignupPage) {
+      const msg = 'Instagram returned LoginAndSignupPage';
+      console.log(`      ${msg}`);
+      throw new Error(msg);
+    }
+
+    const postPages = entry_data.PostPage;
     if (postPages.length != 1) {
       throw new Error(`Got ${postPages.length} post pages!`);
     }
 
+    // Only when all of the validation succeded we can cache 'propertyValue'
+    await cache.put(cacheKey, JSON.stringify(propertyValue));
     return postPages[0];
   }
 
-  private async getWindowProperty(propertyName: string): Promise<any> {
-    const cacheKey = `${this.shortCode}${propertyName}.json`;
-
+  private async getWindowProperty(propertyName: string, cacheKey: string): Promise<any> {
     if (this.useCache) {
       const string = await cache.get(cacheKey);
       if (string) {
-        console.log('    Found cached response');
+        console.log('      Found cached data');
         const result = JSON.parse(string);
         return result;
       }
     }
 
-    const page = await this.openMediaInBrowser();
+    const page = await this.openBrowser();
     const result = await page.evaluate('window.' + propertyName);
-    await cache.put(cacheKey, JSON.stringify(result));
     return result;
   }
 
-  private async openMediaInBrowser(): Promise<Page> {
+  private async openBrowser(): Promise<Page> {
     if (this.openedPage) {
-      console.log('    Media is already opened in browser');
+      console.log('      Browser is already opened');
       return this.openedPage;
     }
 
-    console.log('    Opening media in browser');
+    console.log('      Opening browser');
     const browser = await getBrowser();
 
     const currentPages = await browser.pages();

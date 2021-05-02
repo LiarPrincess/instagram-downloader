@@ -162,7 +162,7 @@ async function get(
   }
 
   const page = new MediaBrowserPage(shortCode, useCache);
-  console.log('  Opening media in browser:', page.url);
+  console.log('  Opening browser:', page.url);
 
   let __initialDataError: Error;
   try {
@@ -170,7 +170,6 @@ async function get(
     await cache.put(cacheKey, JSON.stringify(response));
     return response;
   } catch (error) {
-    console.log(`    ${error}`);
     __initialDataError = error;
   }
 
@@ -180,7 +179,6 @@ async function get(
     await cache.put(cacheKey, JSON.stringify(response));
     return response;
   } catch (error) {
-    console.log(`    ${error}`);
     _sharedDataError = error;
   }
 
@@ -188,7 +186,7 @@ async function get(
 All possible methods to get media failed:
 - GET request: ${requestError}
 - browser __initialData: ${__initialDataError}
-- browser _sharedData: ${_sharedDataError}
+- browser _sharedData: ${_sharedDataError}\
 `;
 
   throw new Error(msg);

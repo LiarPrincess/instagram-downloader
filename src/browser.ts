@@ -8,13 +8,12 @@ export async function getBrowser(): Promise<Browser> {
     return _browser;
   }
 
-  const headless = platform() == 'linux' ? true : false;
   _browser = await launchBrowser({
     defaultViewport: {
       width: 1280,
       height: 720
     },
-    headless
+    headless: false // platform() == 'linux' ? true : false
   });
 
   return _browser;
