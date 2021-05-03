@@ -2,10 +2,12 @@ import { Page } from 'puppeteer';
 
 import { Cache } from '../cache';
 import { Media } from './response-types/media';
-import { MediaInitialData } from './response-types-browser/media__initialData';
-import { MediaSharedData } from './response-types-browser/media_sharedData';
 import { getBrowser } from '../browser';
 import { waitAfterBrowserOpenedMediaToPreventBan } from './common';
+import * as InitialData from './response-types-browser/media__initialData';
+import * as SharedData from './response-types-browser/media_sharedData';
+
+import { promises as fs } from 'fs';
 
 const cache = new Cache('media-by-browser');
 
@@ -45,19 +47,16 @@ export class MediaBrowserPage {
     console.log('    Getting:', propertyName);
 
     const cacheKey = `${this.shortCode}${propertyName}.json`;
-    const propertyValue: MediaInitialData = await this.getWindowProperty(propertyName, cacheKey);
+    const propertyValue: InitialData.Root = await this.getWindowProperty(propertyName, cacheKey);
     if (propertyValue.pending) {
       throw new Error('Response is still pending!');
     }
 
-    const entry_data = propertyValue.data.entry_data;
-    if (entry_data.LoginAndSignupPage) {
-      const msg = 'Instagram returned LoginAndSignupPage';
-      console.log(`      ${msg}`);
-      throw new Error(msg);
-    }
+    const entryData = propertyValue.data.entry_data;
+    this.throwIfLoginPage(entryData);
+    this.throwIfPrivateProfile(entryData);
 
-    const postPages = entry_data.PostPage;
+    const postPages = entryData.PostPage;
     if (postPages.length != 1) {
       throw new Error(`Got ${postPages.length} post pages!`);
     }
@@ -72,16 +71,13 @@ export class MediaBrowserPage {
     console.log('    Getting:', propertyName);
 
     const cacheKey = `${this.shortCode}${propertyName}.json`;
-    const propertyValue: MediaSharedData = await this.getWindowProperty(propertyName, cacheKey);
+    const propertyValue: SharedData.Root = await this.getWindowProperty(propertyName, cacheKey);
 
-    const entry_data = propertyValue.entry_data;
-    if (entry_data.LoginAndSignupPage) {
-      const msg = 'Instagram returned LoginAndSignupPage';
-      console.log(`      ${msg}`);
-      throw new Error(msg);
-    }
+    const entryData = propertyValue.entry_data;
+    this.throwIfLoginPage(entryData);
+    this.throwIfPrivateProfile(entryData);
 
-    const postPages = entry_data.PostPage;
+    const postPages = entryData.PostPage;
     if (postPages.length != 1) {
       throw new Error(`Got ${postPages.length} post pages!`);
     }
@@ -89,6 +85,37 @@ export class MediaBrowserPage {
     // Only when all of the validation succeded we can cache 'propertyValue'
     await cache.put(cacheKey, JSON.stringify(propertyValue));
     return postPages[0];
+  }
+
+  private throwIfLoginPage(entryData: InitialData.EntryData | SharedData.EntryData) {
+    const loginAndSignupPage = entryData.LoginAndSignupPage;
+    if (!loginAndSignupPage) {
+      return;
+    }
+
+    const msg = 'Instagram returned LoginAndSignupPage';
+    console.log(`      ${msg}`);
+    throw new Error(msg);
+  }
+
+  private throwIfPrivateProfile(entryData: InitialData.EntryData | SharedData.EntryData) {
+    const profilePages = entryData.ProfilePage;
+    if (!profilePages) {
+      return;
+    }
+
+    if (profilePages.length != 1) {
+      const msg = `Found ${profilePages.length} profiles (expected 1)`;
+      console.log(`      ${msg}`);
+      throw new Error(msg);
+    }
+
+    const profile = profilePages[0].graphql.user;
+    if (profile.is_private) {
+      const msg = `Profile '${profile.full_name}' is private`;
+      console.log(`      ${msg}`);
+      throw new Error(msg);
+    }
   }
 
   private async getWindowProperty(propertyName: string, cacheKey: string): Promise<any> {
