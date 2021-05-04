@@ -15,36 +15,44 @@ export async function getProfile(
   useCache: boolean
 ): Promise<Profile> {
   console.log('Getting profile:', username);
-  const response = await get(auth, username, useCache);
+  const { response, shouldUpdateCache } = await get(auth, username, useCache);
 
   console.log('  Parsing response');
   const result = parseApiResponse(response);
 
   // Only when all of the validation succeded we can cache the value
-  const cacheKey = createCacheKey(username);
-  await cache.put(cacheKey, JSON.stringify(response));
+  if (useCache && shouldUpdateCache) {
+    const cacheKey = createCacheKey(username);
+    await cache.put(cacheKey, JSON.stringify(response));
+  }
+
   return result;
+}
+
+interface GetResult {
+  readonly response: ApiResponse.Root;
+  readonly shouldUpdateCache: boolean;
 }
 
 async function get(
   auth: GuestAuthentication,
   username: string,
   useCache: boolean
-): Promise<ApiResponse.Root> {
+): Promise<GetResult> {
   if (useCache) {
     const cacheKey = createCacheKey(username);
     const string = await cache.get(cacheKey);
     if (string) {
       console.log('  Found cached response');
-      const result = JSON.parse(string);
-      return result;
+      const response = JSON.parse(string) as ApiResponse.Root;
+      return { response, shouldUpdateCache: false };
     }
   }
 
   console.log('  Requesting by api');
   try {
     const response = await getByApi(auth, username);
-    return response;
+    return { response, shouldUpdateCache: true };
   } catch (error) {
     console.log(`    ${error}`);
     throw error;

@@ -16,12 +16,16 @@ export async function getByBrowser__initialData(
   useCache: boolean
 ): Promise<ApiResponse.Root> {
   const propertyName = '__initialData';
-  const propertyValue: BrowserInitialData.Root = await getWindowProperty(shortCode, propertyName, useCache);
-  if (propertyValue.pending) {
+  const {
+    value,
+    shouldUpdateCache
+  } = await getWindowProperty<BrowserInitialData.Root>(shortCode, propertyName, useCache);
+
+  if (value.pending) {
     throw new Error('Response is still pending!');
   }
 
-  const entryData = propertyValue.data.entry_data;
+  const entryData = value.data.entry_data;
   throwIfLoginPage(entryData);
   throwIfPrivateProfile(entryData);
 
@@ -31,8 +35,11 @@ export async function getByBrowser__initialData(
   }
 
   // Only when all of the validation succeded we can cache the value
-  const cacheKey = createCacheKey(shortCode, propertyName);
-  await cache.put(cacheKey, JSON.stringify(propertyValue));
+  if (useCache && shouldUpdateCache) {
+    const cacheKey = createCacheKey(shortCode, propertyName);
+    await cache.put(cacheKey, JSON.stringify(value));
+  }
+
   return postPages[0];
 }
 
@@ -41,9 +48,12 @@ export async function getByBrowser_sharedData(
   useCache: boolean
 ): Promise<ApiResponse.Root> {
   const propertyName = '_sharedData';
-  const propertyValue: BrowserSharedData.Root = await getWindowProperty(shortCode, propertyName, useCache);
+  const {
+    value,
+    shouldUpdateCache
+  } = await getWindowProperty<BrowserSharedData.Root>(shortCode, propertyName, useCache);
 
-  const entryData = propertyValue.entry_data;
+  const entryData = value.entry_data;
   throwIfLoginPage(entryData);
   throwIfPrivateProfile(entryData);
 
@@ -53,8 +63,11 @@ export async function getByBrowser_sharedData(
   }
 
   // Only when all of the validation succeded we can cache the value
-  const cacheKey = `${shortCode}${propertyName}.json`;
-  await cache.put(cacheKey, JSON.stringify(propertyValue));
+  if (useCache && shouldUpdateCache) {
+    const cacheKey = `${shortCode}${propertyName}.json`;
+    await cache.put(cacheKey, JSON.stringify(value));
+  }
+
   return postPages[0];
 }
 
@@ -62,23 +75,29 @@ export async function getByBrowser_sharedData(
 /* === Get property === */
 /* ==================== */
 
-async function getWindowProperty(
+interface WindowProperty<T> {
+  readonly value: T;
+  readonly shouldUpdateCache: boolean;
+}
+
+async function getWindowProperty<T>(
   shortCode: string,
   propertyName: string,
   useCache: boolean
-): Promise<any> {
+): Promise<WindowProperty<T>> {
   if (useCache) {
     const cacheKey = createCacheKey(shortCode, propertyName);
     const string = await cache.get(cacheKey);
     if (string) {
-      return JSON.parse(string);
+      const value = JSON.parse(string)
+      return { value, shouldUpdateCache: false };
     }
   }
 
   const url = `https://www.instagram.com/p/${shortCode}/`;
   const page = await getExistingTabOrOpenNew(url);
-  const result = await page.evaluate('window.' + propertyName);
-  return result;
+  const value = await page.evaluate('window.' + propertyName) as T;
+  return { value, shouldUpdateCache: true };
 }
 
 function createCacheKey(shortCode: string, propertyName: string): string {

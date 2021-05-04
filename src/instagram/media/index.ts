@@ -17,29 +17,37 @@ export async function getMedia(
   useCache: boolean
 ): Promise<Media> {
   console.log('Getting media:', shortCode);
-  const response = await get(auth, shortCode, useCache);
+  const { response, shouldUpdateCache } = await get(auth, shortCode, useCache);
 
   console.log('  Parsing response');
   const result = parseApiResponse(response);
 
   // Only when all of the validation succeded we can cache the value
-  const cacheKey = createCacheKey(shortCode);
-  await cache.put(cacheKey, JSON.stringify(response));
+  if (useCache && shouldUpdateCache) {
+    const cacheKey = createCacheKey(shortCode);
+    await cache.put(cacheKey, JSON.stringify(response));
+  }
+
   return result;
+}
+
+interface GetResult {
+  readonly response: ApiResponse.Root;
+  readonly shouldUpdateCache: boolean;
 }
 
 async function get(
   auth: GuestAuthentication,
   shortCode: string,
   useCache: boolean
-): Promise<ApiResponse.Root> {
+): Promise<GetResult> {
   if (useCache) {
     const cacheKey = createCacheKey(shortCode);
     const string = await cache.get(cacheKey);
     if (string) {
       console.log('  Found cached response');
-      const result = JSON.parse(string);
-      return result;
+      const response = JSON.parse(string) as ApiResponse.Root;
+      return { response, shouldUpdateCache: false };
     }
   }
 
@@ -48,7 +56,7 @@ async function get(
   console.log('  Requesting by api');
   try {
     const response = await getByApi(auth, shortCode);
-    return response;
+    return { response, shouldUpdateCache: true };
   } catch (error) {
     console.log(`    ${error}`);
     errors.push(error);
@@ -57,7 +65,7 @@ async function get(
   console.log('  Using browser __initialData');
   try {
     const response = await getByBrowser__initialData(shortCode, useCache);
-    return response;
+    return { response, shouldUpdateCache: true };
   } catch (error) {
     console.log(`    ${error}`);
     errors.push(error);
@@ -66,7 +74,7 @@ async function get(
   console.log('  Using browser _sharedDataError');
   try {
     const response = await getByBrowser_sharedData(shortCode, useCache);
-    return response;
+    return { response, shouldUpdateCache: true };
   } catch (error) {
     console.log(`    ${error}`);
     errors.push(error);
