@@ -17,16 +17,16 @@ interface Common {
   readonly commentCount: number;
 }
 
-interface ProfileGraphImage extends Common {
+export interface ProfileGraphImage extends Common {
   readonly type: 'GraphImage';
   readonly displayUrl: string;
 }
 
-interface ProfileGraphSidecar extends Common {
+export interface ProfileGraphSidecar extends Common {
   readonly type: 'GraphSidecar';
 }
 
-interface ProfileGraphVideo extends Common {
+export interface ProfileGraphVideo extends Common {
   readonly type: 'GraphVideo';
 }
 

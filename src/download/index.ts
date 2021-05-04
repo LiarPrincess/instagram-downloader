@@ -4,7 +4,9 @@ import {
   Profile,
   ProfileMedia,
   SavedMedia,
-  Media
+  Media,
+  PrivateProfileError,
+  ProfileGraphImage
 } from '../instagram';
 
 import { downloadGraphImage } from './graph-image';
@@ -19,17 +21,7 @@ export async function downloadMedia(
   for (let index = 0; index < mediaEntries.length; index++) {
     const media = mediaEntries[index];
     console.log(`${index + 1}/${mediaEntries.length} Downloading: ${media.shortCode} (type: ${media.type})`);
-
-    let hasDownloadedSuccesfully = false;
-    while (!hasDownloadedSuccesfully) {
-      try {
-        await tryDownloadSingleMedia(media, outputDir);
-        hasDownloadedSuccesfully = true;
-      } catch (error) {
-        console.log(`${error}`);
-        await waitAfterFailedDownload();
-      }
-    }
+    await downloadSingleMedia(media, outputDir);
   }
 }
 
@@ -40,27 +32,9 @@ export async function downloadSavedMedia(
   useCache: boolean
 ) {
   for (let index = 0; index < mediaEntries.length; index++) {
-    const savedMedia = mediaEntries[index];
-    console.log(`${index + 1}/${mediaEntries.length} Downloading: ${savedMedia.shortCode} (type: ${savedMedia.type})`);
-
-    let hasDownloadedSuccesfully = false;
-    while (!hasDownloadedSuccesfully) {
-      try {
-        const mediaResponse = await getMedia(auth, savedMedia.shortCode, useCache);
-        switch (mediaResponse.type) {
-          case 'Media':
-            await tryDownloadSingleMedia(mediaResponse.media, outputDir);
-            break;
-          case 'PrivateProfile':
-            // We can't download it, so we will just skip
-            break;
-        }
-        hasDownloadedSuccesfully = true;
-      } catch (error) {
-        console.log(`${error}`);
-        await waitAfterFailedDownload();
-      }
-    }
+    const media = mediaEntries[index];
+    console.log(`${index + 1}/${mediaEntries.length} Downloading: ${media.shortCode} (type: ${media.type})`);
+    await getAndDownloadSingleMedia(auth, media.shortCode, useCache, outputDir);
   }
 }
 
@@ -77,82 +51,90 @@ export async function downloadProfileMedia(
     const media = mediaEntries[index];
     console.log(`${index + 1}/${mediaEntries.length} Downloading: ${media.shortCode} (type: ${media.type})`);
 
-    let hasDownloadedSuccesfully = false;
-    while (!hasDownloadedSuccesfully) {
-      try {
-        switch (media.type) {
-          case 'GraphImage':
-            await downloadGraphImage(ownerUsername, media, outputDir);
-            break;
-          case 'GraphSidecar':
-          case 'GraphVideo':
-            const mediaResponse = await getMedia(auth, media.shortCode, useCache);
-            switch (mediaResponse.type) {
-              case 'Media':
-                await tryDownloadSingleMedia(mediaResponse.media, outputDir);
-                break;
-              case 'PrivateProfile':
-                // We can't download it, so we will just skip
-                break;
-            }
-
-            hasDownloadedSuccesfully = true;
-            break;
-        }
-      } catch (error) {
-        console.log(`${error}`);
-        await waitAfterFailedDownload();
-      }
+    switch (media.type) {
+      case 'GraphImage':
+        await downloadProfileGraphImage(ownerUsername, media, outputDir);
+        break;
+      case 'GraphSidecar':
+      case 'GraphVideo':
+        await getAndDownloadSingleMedia(auth, media.shortCode, useCache, outputDir);
+        break;
     }
   }
 }
 
-interface MediaResponse {
-  readonly type: 'Media';
-  readonly media: instagram.Media;
-}
+/* ==================== */
+/* === Single media === */
+/* ==================== */
 
-interface ProfileIsPrivate {
-  readonly type: 'PrivateProfile';
-}
-
-async function getMedia(
+/**
+ * Get full media data and download it.
+ */
+async function getAndDownloadSingleMedia(
   auth: GuestAuthentication,
   shortCode: string,
-  useCache: boolean
-): Promise<MediaResponse | ProfileIsPrivate> {
-  try {
-    const media = await instagram.getMedia(auth, shortCode, useCache);
-    return { type: 'Media', media };
-  } catch (error) {
-    const message: string | undefined = error.message;
-    if (message) {
-      // All possible methods to get media failed:
-      // - GET request: Error: Invalid response content type: 'text/html; charset=utf-8' (expected json).
-      // - browser __initialData: Error: Profile 'Quil' is private
-      // - browser _sharedData: Error: Profile 'Quil' is private
-
-      const isPrivate = message.search(/Error: Profile '.*' is private/);
-      if (isPrivate) {
-        return { type: 'PrivateProfile' };
+  useCache: boolean,
+  outputDir: string
+) {
+  let media: Media | undefined;
+  while (!media) {
+    try {
+      media = await instagram.getMedia(auth, shortCode, useCache);
+    } catch (error) {
+      if (error instanceof PrivateProfileError) {
+        // It's not like we can download it even after 1000 tries...
+        return;
       }
-    }
 
-    throw error;
+      console.log(`${error}`);
+      await waitAfterFailedDownload();
+    }
+  }
+
+  await downloadSingleMedia(media, outputDir);
+}
+
+async function downloadSingleMedia(
+  media: Media,
+  outputDir: string
+) {
+  let hasDownloadedSuccesfully = false;
+  while (!hasDownloadedSuccesfully) {
+    try {
+      switch (media.type) {
+        case 'GraphImage':
+          const ownerUsername = media.owner.username;
+          await downloadGraphImage(ownerUsername, media, outputDir);
+          break;
+        case 'GraphSidecar':
+          await downloadGraphSidecar(media, outputDir);
+          break;
+        case 'GraphVideo':
+          await downloadGraphVideo('TYPECHECK_TOKEN');
+          break;
+      }
+
+      hasDownloadedSuccesfully = true;
+    } catch (error) {
+      console.log(`${error}`);
+      await waitAfterFailedDownload();
+    }
   }
 }
 
-async function tryDownloadSingleMedia(media: instagram.Media, outputDir: string) {
-  switch (media.type) {
-    case 'GraphImage':
-      const ownerUsername = media.owner.username;
+async function downloadProfileGraphImage(
+  ownerUsername: string,
+  media: ProfileGraphImage,
+  outputDir: string
+) {
+  let hasDownloadedSuccesfully = false;
+  while (!hasDownloadedSuccesfully) {
+    try {
       await downloadGraphImage(ownerUsername, media, outputDir);
-      break;
-    case 'GraphSidecar':
-      await downloadGraphSidecar(media, outputDir);
-      break;
-    case 'GraphVideo':
-      await downloadGraphVideo('TYPECHECK_TOKEN');
-      break;
+      hasDownloadedSuccesfully = true;
+    } catch (error) {
+      console.log(`${error}`);
+      await waitAfterFailedDownload();
+    }
   }
 }

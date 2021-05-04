@@ -1,4 +1,4 @@
-import { Shortcodemedia } from '../response-types/media';
+import { Shortcodemedia } from './api-response';
 
 export interface Root {
   config: Config;

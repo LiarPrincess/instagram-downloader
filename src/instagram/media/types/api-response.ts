@@ -1,4 +1,4 @@
-export interface Media {
+export interface Root {
   graphql: Graphql;
 }
 
