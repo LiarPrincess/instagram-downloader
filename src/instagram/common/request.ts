@@ -1,5 +1,4 @@
 import { createHash } from 'crypto';
-import { promises as fs } from 'fs';
 import { default as axios } from 'axios';
 
 import { UserAgents } from './UserAgents';
@@ -35,10 +34,4 @@ function calculateGIS(data: string) {
   const hashData = `${rhx_gis}:${data}`;
   const hash = createHash('md5').update(hashData, 'utf8');
   return hash.digest('hex');
-}
-
-/// Tiny helper to save response to file.
-export async function save(data: any) {
-  const string = JSON.stringify(data);
-  await fs.writeFile('./__response.json', string, 'utf-8');
 }
