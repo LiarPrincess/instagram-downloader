@@ -1,4 +1,4 @@
-export interface ProfileMediaResponse {
+export interface Root {
   data: Data;
   status: string;
 }
