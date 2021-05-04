@@ -1,4 +1,4 @@
-export interface UserSavedResponse {
+export interface Root {
   data: Data;
   status: string;
 }

@@ -1,5 +1,5 @@
 export * from './authenticate';
-export * from './profile';
+export { Profile, getProfile } from './profile';
+export { SavedMedia, getSavedMedia } from './profile-saved';
 export * from './profile-media';
-export * from './media';
-export * from './user-saved';
+export { Media, LoginRequiredError, PrivateProfileError, getMedia } from './media';
