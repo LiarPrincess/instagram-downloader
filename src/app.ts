@@ -53,6 +53,37 @@ async function downloadAllSaved(
   myUsername: string
 ) {
   const profile = await instagram.getProfile(guestAuth, myUsername, useCache);
-  const media = await instagram.getSavedMedia(browserAuth, profile, useCache);
+  let media = await instagram.getSavedMedia(browserAuth, profile, useCache);
+  media = await removeKnownNotAvailableMedia(media);
   await download.downloadSavedMedia(guestAuth, media, outputDir, useCache);
+}
+
+interface HasShortCode {
+  readonly shortCode: string;
+}
+
+async function removeKnownNotAvailableMedia(medias: HasShortCode[]): Promise<any[]> {
+  const knownContent = await fs.readFile('./known-not-available-media.txt', 'utf-8');
+  const knownLines = knownContent.split('\n');
+
+  const knownNotAvailableShortCodes = new Set<string>();
+  for (const l of knownLines) {
+    const line = l.trim();
+    const isValidLine = line && !line.startsWith('#');
+    if (isValidLine) {
+      knownNotAvailableShortCodes.add(line);
+    }
+  }
+
+  const result: HasShortCode[] = [];
+
+  for (const media of medias) {
+    const isNotAvailable = knownNotAvailableShortCodes.has(media.shortCode);
+    const isAvailable = !isNotAvailable;
+    if (isAvailable) {
+      result.push(media);
+    }
+  }
+
+  return result;
 }
