@@ -1,6 +1,6 @@
 import { Cache } from '../../cache';
 import { GuestAuthentication } from '../authenticate';
-import { Media, ApiResponse, PrivateProfileError } from './types';
+import { Media, ApiResponse, GetMediaError } from './types';
 
 import { getByApi } from './get-by-api';
 import { getByBrowser__initialData, getByBrowser_sharedData } from './get-by-browser';
@@ -52,14 +52,22 @@ async function get(
   }
 
   const errors: Error[] = [];
+  function handleError(error: Error) {
+    console.log(`    ${error}`);
+
+    if (error instanceof GetMediaError && error.allFollowingRequestsWillAlsoFail) {
+      throw error;
+    }
+
+    errors.push(error);
+  }
 
   console.log('  Requesting by api');
   try {
     const response = await getByApi(auth, shortCode);
     return { response, shouldUpdateCache: true };
   } catch (error) {
-    console.log(`    ${error}`);
-    errors.push(error);
+    handleError(error);
   }
 
   console.log('  Using browser __initialData');
@@ -67,8 +75,7 @@ async function get(
     const response = await getByBrowser__initialData(shortCode, useCache);
     return { response, shouldUpdateCache: true };
   } catch (error) {
-    console.log(`    ${error}`);
-    errors.push(error);
+    handleError(error);
   }
 
   console.log('  Using browser _sharedDataError');
@@ -76,17 +83,11 @@ async function get(
     const response = await getByBrowser_sharedData(shortCode, useCache);
     return { response, shouldUpdateCache: true };
   } catch (error) {
-    console.log(`    ${error}`);
-    errors.push(error);
+    handleError(error);
   }
 
-  for (const error of errors) {
-    if (error instanceof PrivateProfileError) {
-      throw error;
-    }
-  }
-
-  throw new Error('All possible methods to get media failed.');
+  const getMediaError = errors.find(e => e instanceof GetMediaError);
+  throw getMediaError || new GetMediaError({ kind: 'Unknown' });
 }
 
 function createCacheKey(shortCode: string): string {

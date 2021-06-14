@@ -5,7 +5,7 @@ import {
   ProfileMedia,
   SavedMedia,
   Media,
-  PrivateProfileError,
+  GetMediaError,
   ProfileGraphImage
 } from '../instagram';
 
@@ -81,8 +81,8 @@ async function getAndDownloadSingleMedia(
     try {
       media = await instagram.getMedia(auth, shortCode, useCache);
     } catch (error) {
-      if (error instanceof PrivateProfileError) {
-        // It's not like we can download it even after 1000 tries...
+      if (error instanceof GetMediaError && error.allFollowingRequestsWillAlsoFail) {
+        // It's not like we can download it, even after 1000 tries...
         return;
       }
 

@@ -28,6 +28,7 @@ interface Config {
 }
 
 export interface EntryData {
+  HttpErrorPage: any | undefined;
   LoginAndSignupPage: any | undefined;
   ProfilePage: ProfilePage[] | undefined;
   PostPage: PostPage[];

@@ -6,7 +6,7 @@ import { waitAfterBrowserOpenedMediaToPreventBan } from '../common';
 import {
   ApiResponse,
   BrowserInitialData, BrowserSharedData,
-  LoginRequiredError, PrivateProfileError
+  GetMediaError
 } from './types';
 
 const cache = new Cache('media-by-browser');
@@ -26,6 +26,7 @@ export async function getByBrowser__initialData(
   }
 
   const entryData = value.data.entry_data;
+  throwIfHttpErrorPage(entryData);
   throwIfLoginPage(entryData);
   throwIfPrivateProfile(entryData);
 
@@ -54,6 +55,7 @@ export async function getByBrowser_sharedData(
   } = await getWindowProperty<BrowserSharedData.Root>(shortCode, propertyName, useCache);
 
   const entryData = value.entry_data;
+  throwIfHttpErrorPage(entryData);
   throwIfLoginPage(entryData);
   throwIfPrivateProfile(entryData);
 
@@ -128,13 +130,18 @@ async function getExistingTabOrOpenNew(url: string): Promise<Page> {
 /* === Errors === */
 /* ============== */
 
+function throwIfHttpErrorPage(entryData: BrowserInitialData.EntryData | BrowserSharedData.EntryData) {
+  const httpErrorPage = entryData.HttpErrorPage;
+  if (httpErrorPage) {
+    throw new GetMediaError({ kind: 'MissingMedia' });
+  }
+}
+
 function throwIfLoginPage(entryData: BrowserInitialData.EntryData | BrowserSharedData.EntryData) {
   const loginAndSignupPage = entryData.LoginAndSignupPage;
-  if (!loginAndSignupPage) {
-    return;
+  if (loginAndSignupPage) {
+    throw new GetMediaError({ kind: 'RequestsTemporaryDisabled' });
   }
-
-  throw new LoginRequiredError();
 }
 
 function throwIfPrivateProfile(entryData: BrowserInitialData.EntryData | BrowserSharedData.EntryData) {
@@ -149,6 +156,6 @@ function throwIfPrivateProfile(entryData: BrowserInitialData.EntryData | Browser
 
   const profile = profilePages[0].graphql.user;
   if (profile.is_private) {
-    throw new PrivateProfileError(profile.username);
+    throw new GetMediaError({ kind: 'ProfileIsPrivate', username: profile.username });
   }
 }
