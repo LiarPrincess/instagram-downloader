@@ -4,22 +4,18 @@ import {
   ImageSource,
   toDateString,
   getBiggestImageUrl,
-  downloadFileIfNotExists
+  downloadImageIfNotExists
 } from './helpers';
-
-interface GraphImage {
-  readonly takenAt: Date;
-  readonly displayUrl: string;
-  readonly sources?: ImageSource[];
-}
 
 export async function downloadGraphImage(
   ownerUsername: string,
-  media: GraphImage,
+  takenAt: Date,
+  displayUrl: string,
+  sources: ImageSource[],
   outputDir: string
 ) {
-  const date = toDateString(media.takenAt);
+  const date = toDateString(takenAt);
   const path = join(outputDir, `${ownerUsername}-${date}.jpg`);
-  const url = getBiggestImageUrl(media.displayUrl, media.sources);
-  await downloadFileIfNotExists(path, url);
+  const url = getBiggestImageUrl(displayUrl, sources);
+  await downloadImageIfNotExists(path, url);
 }

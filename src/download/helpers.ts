@@ -1,5 +1,9 @@
 import { default as axios } from 'axios';
 import { promises as fs, createWriteStream } from 'fs';
+import { exec as exec_ } from 'child_process';
+import { promisify } from 'util';
+
+const exec = promisify(exec_);
 
 /* ======================= */
 /* === Date formatting === */
@@ -37,7 +41,7 @@ export interface ImageSource {
   readonly height: number;
 }
 
-export function getBiggestImageUrl(displayUrl: string, sources?: ImageSource[]): string {
+export function getBiggestImageUrl(displayUrl: string, sources: ImageSource[]): string {
   if (sources && sources.length > 0) {
     let result = sources[0];
     for (const source of sources) {
@@ -61,7 +65,10 @@ enum DownloadFileResult {
   alreadyExists
 }
 
-export async function downloadFileIfNotExists(file: string, url: string): Promise<DownloadFileResult> {
+export async function downloadImageIfNotExists(
+  file: string,
+  url: string
+): Promise<DownloadFileResult> {
   const alreadyExists = await exists(file);
   if (alreadyExists) {
     console.log('  Already exists:', file);
@@ -69,7 +76,36 @@ export async function downloadFileIfNotExists(file: string, url: string): Promis
   }
 
   console.log('  Creating:', file);
-  await downloadBinary(file, url);
+
+  while (true) {
+    try {
+      await downloadBinary(file, url);
+      return DownloadFileResult.downloaded;
+    } catch (error) {
+      console.log(`${error}`);
+      await waitAfterFailedDownload();
+    }
+  }
+}
+
+export async function downloadVideoIfNotExists(
+  file: string,
+  url: string
+): Promise<DownloadFileResult> {
+  const alreadyExists = await exists(file);
+  if (alreadyExists) {
+    console.log('  Already exists:', file);
+    return DownloadFileResult.alreadyExists;
+  }
+
+  console.log('  Creating:', file);
+
+  // We are going to use 'ffmpeg' because sometimes normal download does not work.
+  const command = `ffmpeg -i "${url}" -c copy "${file}"`;
+  const { stdout, stderr } = await exec(command);
+  console.log('stdout:', stdout);
+  console.log('stderr:', stderr);
+
   return DownloadFileResult.downloaded;
 }
 

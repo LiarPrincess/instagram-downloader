@@ -4,17 +4,9 @@ import {
   ImageSource,
   toDateString,
   getBiggestImageUrl,
-  downloadFileIfNotExists
+  downloadImageIfNotExists,
+  downloadVideoIfNotExists
 } from './helpers';
-import { downloadGraphVideo } from './graph-video';
-
-interface GraphSidecar {
-  readonly owner: {
-    readonly username: string
-  };
-  readonly takenAt: Date;
-  readonly children: GraphSidecarChild[];
-}
 
 type GraphSidecarChild = GraphSidecarImage | GraphSidecarVideo;
 
@@ -26,28 +18,32 @@ interface GraphSidecarImage {
 
 interface GraphSidecarVideo {
   readonly type: 'GraphVideo';
+  readonly videoUrl: string;
 }
 
 export async function downloadGraphSidecar(
-  media: GraphSidecar,
+  ownerUsername: string,
+  takenAt: Date,
+  children: GraphSidecarChild[],
+  downloadVideo: boolean,
   outputDir: string
 ) {
-  const ownerUsername = media.owner.username;
-  const date = toDateString(media.takenAt);
+  const date = toDateString(takenAt);
 
-  for (let index = 0; index < media.children.length; index++) {
-    const child = media.children[index];
+  for (let index = 0; index < children.length; index++) {
+    const child = children[index];
     switch (child.type) {
       case 'GraphImage':
         const imgPath = join(outputDir, `${ownerUsername}-${date}-${index}.jpg`);
         const imgUrl = getBiggestImageUrl(child.displayUrl, child.sources);
-        await downloadFileIfNotExists(imgPath, imgUrl);
+        await downloadImageIfNotExists(imgPath, imgUrl);
         break;
 
       case 'GraphVideo':
-        // const videoPath = join(outputDir, `${ownerUsername}-${date}-${index}.mp4`);
-        // await downloadIfNotExists(videoPath, child.videoUrl);
-        await downloadGraphVideo('TYPECHECK_TOKEN');
+        if (downloadVideo) {
+          const videoPath = join(outputDir, `${ownerUsername}-${date}-${index}.mp4`);
+          await downloadVideoIfNotExists(videoPath, child.videoUrl);
+        }
         break;
 
       default:
