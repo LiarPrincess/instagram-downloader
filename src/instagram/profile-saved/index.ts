@@ -13,7 +13,8 @@ export * from './types/saved-media';
 export async function getSavedMedia(
   auth: BrowserAuthentication,
   profile: Profile,
-  useCache: boolean
+  useCache: boolean,
+  stopAtShortCodes: string[] = []
 ): Promise<SavedMedia[]> {
   console.log('Getting saved media for:', profile.username);
   const result: SavedMedia[] = [];
@@ -33,8 +34,16 @@ export async function getSavedMedia(
       await cache.put(cacheKey, JSON.stringify(response));
     }
 
-    parsed.media.forEach(m => result.push(m));
-    endCursor = parsed.endCursor; // To actually finish our loop
+    let hasArrivedToStopShortCode = false;
+    for (const media of parsed.media) {
+      result.push(media);
+
+      const isStop = stopAtShortCodes.includes(media.shortCode);
+      hasArrivedToStopShortCode = hasArrivedToStopShortCode || isStop;
+    }
+
+    // To actually finish our loop
+    endCursor = hasArrivedToStopShortCode ? undefined : parsed.endCursor;
   } while (endCursor != undefined);
 
   return result;

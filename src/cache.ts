@@ -22,7 +22,8 @@ export class Cache {
   async get(key: string): Promise<string | undefined> {
     try {
       const path = await this.createFilePath(key);
-      return await fs.readFile(path, encoding);
+      const result = await fs.readFile(path, encoding);
+      return result;
     } catch (error) {
       return undefined;
     }
@@ -83,7 +84,7 @@ export class Cache {
       fileStream.on('finish', resolve);
       fileStream.on('error', reject);
     })
-    .then(() => path);
+      .then(() => path);
   }
 
   /* =============== */
