@@ -1,4 +1,4 @@
-import { SavedMedia, Common, ApiResponse } from './types';
+import { SavedMedia, SavedMediaData, ApiResponse } from './types';
 import { parseTimestamp } from '../common';
 
 interface ParsedApiResponse {
@@ -19,31 +19,32 @@ function parseMedia(response: ApiResponse.Root): SavedMedia[] {
   for (const edge of mediaPage.edges) {
     const media = edge.node;
 
-    const common: Common = {
-      id: media.id,
-      shortCode: media.shortcode,
-      takenAt: parseTimestamp(media.taken_at_timestamp),
-      ownerId: media.owner.id,
-      likeCount: media.edge_liked_by.count
-    };
-
+    let data: SavedMediaData;
     switch (media.__typename) {
       case 'GraphImage':
         const displayUrl = media.display_url;
-        result.push({ type: 'GraphImage', displayUrl, ...common });
+        data = { type: 'GraphImage', displayUrl };
         break;
-
       case 'GraphSidecar':
-        result.push({ type: 'GraphSidecar', ...common });
+        data = { type: 'GraphSidecar' };
         break;
-
       case 'GraphVideo':
-        result.push({ type: 'GraphVideo', ...common });
+        data = { type: 'GraphVideo' };
         break;
-
       default:
         throw new Error(`Unknown media type '${media.__typename}'.`);
     }
+
+    const savedMedia = new SavedMedia(
+      media.id,
+      media.shortcode,
+      parseTimestamp(media.taken_at_timestamp),
+      media.owner.id,
+      data,
+      media.edge_liked_by.count
+    );
+
+    result.push(savedMedia);
   }
 
   return result;

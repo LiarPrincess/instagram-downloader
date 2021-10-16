@@ -1,23 +1,15 @@
-export type ProfileMedia = ProfileGraphImage | ProfileGraphSidecar | ProfileGraphVideo;
+export type ProfileMediaData =
+  { type: 'GraphImage'; displayUrl: string } |
+  { type: 'GraphSidecar' } |
+  { type: 'GraphVideo' };
 
-export interface Common {
-  readonly id: string;
-  readonly shortCode: string;
-  readonly takenAt: Date;
-
-  readonly likeCount: number;
-  readonly commentCount: number;
-}
-
-export interface ProfileGraphImage extends Common {
-  readonly type: 'GraphImage';
-  readonly displayUrl: string;
-}
-
-export interface ProfileGraphSidecar extends Common {
-  readonly type: 'GraphSidecar';
-}
-
-export interface ProfileGraphVideo extends Common {
-  readonly type: 'GraphVideo';
+export class ProfileMedia {
+  constructor(
+    public readonly id: string,
+    public readonly shortCode: string,
+    public readonly takenAt: Date,
+    public readonly data: ProfileMediaData,
+    public readonly likeCount: number,
+    public readonly commentCount: number,
+  ) { }
 }

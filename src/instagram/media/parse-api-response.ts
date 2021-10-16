@@ -1,5 +1,5 @@
 import {
-  Media, Owner, Common, GraphSidecarChild, ImageSource,
+  Media, MediaOwner, MediaData, MediaSidecarChild, MediaSidecarImage, MediaSidecarVideo, ImageSource,
   ApiResponse
 } from './types';
 import { parseTimestamp } from '../common';
@@ -7,30 +7,16 @@ import { parseTimestamp } from '../common';
 export function parseApiResponse(response: ApiResponse.Root): Media {
   const media = response.graphql.shortcode_media;
 
-  const owner: Owner = {
-    id: media.owner.id,
-    username: media.owner.username,
-    full_name: media.owner.full_name,
-    profilePicUrl: media.owner.profile_pic_url
-  };
-
-  const common: Common = {
-    id: media.id,
-    shortCode: media.shortcode,
-    owner,
-    takenAt: parseTimestamp(media.taken_at_timestamp),
-    likeCount: media.edge_media_preview_like.count,
-    commentCount: media.edge_media_preview_comment.count,
-  };
-
+  let data: MediaData;
   switch (media.__typename) {
     case 'GraphImage':
       const displayUrl = media.display_url;
       const sources = toImageSources(media.display_resources);
-      return { type: 'GraphImage', displayUrl, sources, ...common };
+      data = { type: 'GraphImage', displayUrl, sources };
+      break;
 
     case 'GraphSidecar':
-      const children: GraphSidecarChild[] = [];
+      const children: MediaSidecarChild[] = [];
       for (const edge of media.edge_sidecar_to_children.edges) {
         const child = edge.node;
         const id = child.id;
@@ -40,12 +26,14 @@ export function parseApiResponse(response: ApiResponse.Root): Media {
           case 'GraphImage':
             const displayUrl = child.display_url;
             const sources = toImageSources(child.display_resources);
-            children.push({ type: 'GraphImage', id, shortCode, displayUrl, sources });
+            const image = new MediaSidecarImage(id, shortCode, displayUrl, sources);
+            children.push(image);
             break;
 
           case 'GraphVideo':
             const videoUrl = child.video_url;
-            children.push({ type: 'GraphVideo', id, shortCode, videoUrl });
+            const video = new MediaSidecarVideo(id, shortCode, videoUrl);
+            children.push(video);
             break;
 
           default:
@@ -53,15 +41,34 @@ export function parseApiResponse(response: ApiResponse.Root): Media {
         }
       }
 
-      return { type: 'GraphSidecar', children, ...common };
+      data = { type: 'GraphSidecar', children };
+      break;
 
     case 'GraphVideo':
       const videoUrl = media.video_url;
-      return { type: 'GraphVideo', videoUrl, ...common };
+      data = { type: 'GraphVideo', videoUrl };
+      break;
 
     default:
       throw new Error(`Unknown media type '${media.__typename}'.`);
   }
+
+  const owner = new MediaOwner(
+    media.owner.id,
+    media.owner.username,
+    media.owner.full_name,
+    media.owner.profile_pic_url
+  );
+
+  return new Media(
+    media.id,
+    media.shortcode,
+    owner,
+    parseTimestamp(media.taken_at_timestamp),
+    data,
+    media.edge_media_preview_like.count,
+    media.edge_media_preview_comment.count,
+  );
 }
 
 function toImageSources(resources: ApiResponse.DisplayResource[]): ImageSource[] {

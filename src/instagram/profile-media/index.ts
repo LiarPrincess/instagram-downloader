@@ -26,7 +26,7 @@ export async function getProfileMedia(
     console.log('    Parsing response');
     const parsed = await parseApiResponse(response);
 
-    // Only when all of the validation succeded we can cache the value
+    // Only when all of the validation succeeded we can cache the value
     // We have to do before assigning 'endCursor'!
     if (useCache && shouldUpdateCache) {
       const cacheKey = createCacheKey(profile, endCursor);

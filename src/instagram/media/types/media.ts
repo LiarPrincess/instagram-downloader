@@ -1,53 +1,48 @@
-export type Media = GraphImage | GraphSidecar | GraphVideo;
-
-export interface Common {
-  readonly id: string;
-  readonly shortCode: string;
-  readonly owner: Owner;
-  readonly takenAt: Date;
-
-  readonly likeCount: number;
-  readonly commentCount: number;
+export class MediaOwner {
+  constructor(
+    public readonly id: string,
+    public readonly username: string,
+    public readonly full_name: string,
+    public readonly profilePicUrl: string
+  ) { }
 }
 
-export interface Owner {
-  readonly id: string;
-  readonly username: string;
-  readonly full_name: string;
-  readonly profilePicUrl: string;
+export type MediaData =
+  { type: 'GraphImage', displayUrl: string, sources: ImageSource[] } |
+  { type: 'GraphSidecar', children: MediaSidecarChild[] } |
+  { type: 'GraphVideo', videoUrl: string };
+
+export class Media {
+  constructor(
+    public readonly id: string,
+    public readonly shortCode: string,
+    public readonly owner: MediaOwner,
+    public readonly takenAt: Date,
+    public readonly data: MediaData,
+    public readonly likeCount: number,
+    public readonly commentCount: number
+  ) { }
 }
 
-export interface GraphImage extends Common {
-  readonly type: 'GraphImage';
-  readonly displayUrl: string;
-  readonly sources: ImageSource[];
+export type MediaSidecarChild = MediaSidecarImage | MediaSidecarVideo;
+
+export class MediaSidecarVideo {
+  public readonly type = 'GraphVideo';
+  constructor(
+    public readonly id: string,
+    public readonly shortCode: string,
+    public readonly videoUrl: string
+  ) { }
 }
 
-export interface GraphSidecar extends Common {
-  readonly type: 'GraphSidecar';
-  readonly children: GraphSidecarChild[];
-}
-
-export type GraphSidecarChild = GraphSidecarImage | GraphSidecarVideo;
-
-export interface GraphSidecarImage {
-  readonly type: 'GraphImage';
-  readonly id: string;
-  readonly shortCode: string;
-  readonly displayUrl: string;
-  readonly sources: ImageSource[];
-}
-
-export interface GraphSidecarVideo {
-  readonly type: 'GraphVideo';
-  readonly id: string;
-  readonly shortCode: string;
-  readonly videoUrl: string;
-}
-
-export interface GraphVideo extends Common {
-  readonly type: 'GraphVideo';
-  readonly videoUrl: string;
+export class MediaSidecarImage {
+  public readonly type = 'GraphImage';
+  constructor(
+    public readonly id: string,
+    public readonly shortCode: string,
+    public readonly displayUrl: string,
+    public readonly sources: ImageSource[]
+  ) { }
 }
 
 export interface ImageSource {

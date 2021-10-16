@@ -35,7 +35,7 @@ export async function getByBrowser__initialData(
     throw new Error(`Got ${postPages.length} post pages!`);
   }
 
-  // Only when all of the validation succeded we can cache the value
+  // Only when all of the validation succeeded we can cache the value
   if (useCache && shouldUpdateCache) {
     const cacheKey = createCacheKey(shortCode, propertyName);
     await cache.put(cacheKey, JSON.stringify(value));
@@ -64,7 +64,7 @@ export async function getByBrowser_sharedData(
     throw new Error(`Got ${postPages.length} post pages!`);
   }
 
-  // Only when all of the validation succeded we can cache the value
+  // Only when all of the validation succeeded we can cache the value
   if (useCache && shouldUpdateCache) {
     const cacheKey = `${shortCode}${propertyName}.json`;
     await cache.put(cacheKey, JSON.stringify(value));

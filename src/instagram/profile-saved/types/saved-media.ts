@@ -1,22 +1,15 @@
-export type SavedMedia = SavedGraphImage | SavedGraphSidecar | SavedGraphVideo;
+export type SavedMediaData =
+  { type: 'GraphImage'; displayUrl: string } |
+  { type: 'GraphSidecar' } |
+  { type: 'GraphVideo' };
 
-export interface Common {
-  readonly id: string;
-  readonly shortCode: string;
-  readonly takenAt: Date;
-  readonly ownerId: string;
-  readonly likeCount: number;
-}
-
-export interface SavedGraphImage extends Common {
-  readonly type: 'GraphImage';
-  readonly displayUrl: string;
-}
-
-export interface SavedGraphSidecar extends Common {
-  readonly type: 'GraphSidecar';
-}
-
-export interface SavedGraphVideo extends Common {
-  readonly type: 'GraphVideo';
+export class SavedMedia {
+  constructor(
+    public readonly id: string,
+    public readonly shortCode: string,
+    public readonly takenAt: Date,
+    public readonly ownerId: string,
+    public readonly data: SavedMediaData,
+    public readonly likeCount: number
+  ) { }
 }

@@ -1,16 +1,18 @@
-export interface Profile {
-  readonly id: string;
-  readonly fullName: string;
-  readonly username: string;
-  readonly biography: string;
-  readonly isPrivate: boolean;
+export class Profile {
+  constructor(
+    public readonly id: string,
+    public readonly fullName: string,
+    public readonly username: string,
+    public readonly biography: string,
+    public readonly isPrivate: boolean,
 
-  readonly profilePic: {
-    url: string,
-    hdUrl: string
-  };
+    public readonly profilePic: {
+      url: string,
+      urlHd: string
+    },
 
-  readonly followersCount: number;
-  readonly followingCount: number;
-  readonly postCount: number;
+    public readonly followersCount: number,
+    public readonly followingCount: number,
+    public readonly postCount: number,
+  ) { }
 }

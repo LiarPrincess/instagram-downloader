@@ -22,7 +22,7 @@ export async function getMedia(
   console.log('  Parsing response');
   const result = parseApiResponse(response);
 
-  // Only when all of the validation succeded we can cache the value
+  // Only when all of the validation succeeded we can cache the value
   if (useCache && shouldUpdateCache) {
     const cacheKey = createCacheKey(shortCode);
     await cache.put(cacheKey, JSON.stringify(response));
