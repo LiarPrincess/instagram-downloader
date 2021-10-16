@@ -12,8 +12,8 @@ const outputDir = './output';
 
     // You can get them from cookies in the browser
     const browserAuth = {
-      sessionId: '6126805921%3AVlmDLsLkIFjLZs%3A4',
-      csrfToken: 'sPXBs2wHuaPfCDYyGqHVQn2araOu1Vly'
+      sessionId: '',
+      csrfToken: ''
     };
 
     // === Profile ===
